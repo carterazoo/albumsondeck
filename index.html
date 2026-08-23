@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>On Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D0D0F;
+    --surface:#151419;
+    --surface-2:#1E1C24;
+    --line:#2A2833;
+    --bone:#F2EDE4;
+    --muted:#8B857D;
+    --muted-2:#615C55;
+    --accent:#FF3B44;
+    --accent-dim:#B32830;
+    --ok:#5BC98A;
+    --display:'Anton',sans-serif;
+    --ui:'Space Grotesk',sans-serif;
+    --mono:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--bone);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  button{font-family:inherit;cursor:pointer;color:inherit;background:none;border:none}
+  ::selection{background:var(--accent);color:#fff}
+
+  .wrap{max-width:760px;margin:0 auto;padding:22px 20px 64px}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .wordmark{font-family:var(--display);font-size:clamp(38px,10vw,60px);line-height:.82;letter-spacing:.5px;text-transform:uppercase}
+  .wordmark .on{color:var(--bone)}
+  .wordmark .deck{color:var(--accent);-webkit-text-stroke:0}
+  .tagline{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  .manage-btn{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:9px 14px;transition:.15s}
+  .manage-btn:hover{color:var(--bone);border-color:var(--muted)}
+
+  /* ---------- progress ---------- */
+  .progress{margin:26px 0 8px}
+  .progress-top{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;letter-spacing:.5px;margin-bottom:8px}
+  .progress-top .cleared{color:var(--muted)}
+  .progress-top .cleared b{color:var(--bone)}
+  .progress-top .left{color:var(--muted-2)}
+  .bar{height:6px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:999px;transition:width .5s cubic-bezier(.4,0,.1,1)}
+
+  /* ---------- filter row ---------- */
+  .filters{display:flex;gap:7px;margin:22px 0 26px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:7px 13px;transition:.15s;white-space:nowrap}
+  .chip:hover{color:var(--bone)}
+  .chip[aria-pressed="true"]{background:var(--bone);color:var(--bg);border-color:var(--bone)}
+
+  /* ---------- stage ---------- */
+  .stage{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:30px 26px;min-height:340px;
+    display:flex;flex-direction:column}
+
+  /* empty / idle state */
+  .idle{margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:22px;padding:20px 0}
+  .idle .kicker{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .idle .big{font-family:var(--display);font-size:clamp(30px,7vw,44px);line-height:.95;text-transform:uppercase;max-width:16ch}
+  .idle .big em{color:var(--accent);font-style:normal}
+
+  /* result */
+  .result{display:none;flex-direction:column}
+  .result.show{display:flex;animation:rise .35s cubic-bezier(.2,.7,.2,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .meta{font-family:var(--mono);font-size:12px;letter-spacing:.5px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .meta .dot{color:var(--muted-2)}
+  .artist{margin-top:16px;font-size:16px;font-weight:600;letter-spacing:.3px;color:var(--bone)}
+  .album-title{font-family:var(--display);font-size:clamp(34px,8.5vw,62px);line-height:.9;text-transform:uppercase;margin-top:6px;word-break:break-word}
+  .album-title.reeling{color:var(--muted);opacity:.85}
+  .no-title{font-family:var(--ui);font-weight:500;font-size:15px;color:var(--muted);font-style:italic;text-transform:none}
+
+  .actions{display:flex;gap:10px;margin:24px 0 4px;flex-wrap:wrap}
+  .btn{font-family:var(--ui);font-weight:600;font-size:14px;letter-spacing:.3px;border-radius:11px;padding:13px 20px;transition:.15s;border:1px solid transparent}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#ff5560}
+  .btn-ghost{border-color:var(--line);color:var(--bone)}
+  .btn-ghost:hover{border-color:var(--muted);background:var(--surface-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.5;pointer-events:none}
+
+  /* the big spin button (idle) */
+  .spin{font-family:var(--display);font-size:22px;letter-spacing:1.5px;text-transform:uppercase;color:#fff;background:var(--accent);
+    border-radius:14px;padding:20px 40px;box-shadow:0 10px 30px -12px var(--accent);transition:.15s}
+  .spin:hover{background:#ff5560;box-shadow:0 14px 34px -12px var(--accent)}
+  .spin:active{transform:translateY(2px)}
+
+  /* tracklist */
+  .tracks{margin-top:26px;border-top:1px solid var(--line);padding-top:22px}
+  .tracks h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .track-cols{columns:1;column-gap:34px}
+  @media(min-width:560px){.track-cols{columns:2}}
+  .track{break-inside:avoid;display:flex;gap:11px;padding:5px 0;font-size:14.5px;line-height:1.35;align-items:baseline}
+  .track .n{font-family:var(--mono);font-size:12px;color:var(--accent);flex:none;min-width:22px;text-align:right}
+  .track .t{color:var(--bone)}
+  .track .feat{color:var(--muted)}
+  .disc-label{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted-2);
+    margin:14px 0 6px;break-inside:avoid}
+  .disc-label:first-child{margin-top:0}
+
+  /* all-cleared empty state */
+  .cleared-state{margin:auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 0}
+  .cleared-state .big{font-family:var(--display);font-size:clamp(28px,6vw,40px);text-transform:uppercase;color:var(--ok)}
+  .cleared-state p{color:var(--muted);font-size:14px;max-width:34ch;line-height:1.5}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);display:none;z-index:40}
+  .overlay.show{display:block}
+  .sheet{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--line);
+    left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,94vw);max-height:88dvh;border-radius:18px;
+    display:none;flex-direction:column;overflow:hidden}
+  .sheet.show{display:flex}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--line)}
+  .sheet-head h2{font-family:var(--display);font-size:26px;text-transform:uppercase;letter-spacing:.5px}
+  .x{font-size:22px;color:var(--muted);width:34px;height:34px;border-radius:8px;line-height:1}
+  .x:hover{color:var(--bone);background:var(--surface-2)}
+  .sheet-body{overflow-y:auto;padding:20px 22px}
+  .sheet-tabs{display:flex;gap:6px;padding:14px 22px 0}
+  .tab{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    padding:8px 12px;border-radius:8px 8px 0 0;border-bottom:2px solid transparent}
+  .tab[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--accent)}
+  .pane{display:none}
+  .pane.show{display:block}
+
+  /* crate list */
+  .crate-tools{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .mini{font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:8px;padding:8px 11px;transition:.15s}
+  .mini:hover{color:var(--bone);border-color:var(--muted)}
+  .mini.danger:hover{color:var(--accent);border-color:var(--accent-dim)}
+  .crate-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .crate-row:last-child{border-bottom:none}
+  .check{flex:none;width:22px;height:22px;border:1.5px solid var(--muted-2);border-radius:6px;display:grid;place-items:center;transition:.15s}
+  .check:hover{border-color:var(--muted)}
+  .crate-row.done .check{background:var(--ok);border-color:var(--ok)}
+  .check svg{width:13px;height:13px;opacity:0;transition:.15s}
+  .crate-row.done .check svg{opacity:1}
+  .crate-info{flex:1;min-width:0}
+  .crate-info .ci-title{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crate-row.done .ci-title{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted-2)}
+  .crate-info .ci-meta{font-family:var(--mono);font-size:11px;color:var(--muted-2);margin-top:2px}
+  .del{flex:none;color:var(--muted-2);font-size:18px;width:30px;height:30px;border-radius:7px;line-height:1}
+  .del:hover{color:var(--accent);background:var(--surface-2)}
+
+  /* add pane */
+  .field-label{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  textarea{width:100%;min-height:200px;background:var(--bg);border:1px solid var(--line);border-radius:11px;
+    color:var(--bone);font-family:var(--mono);font-size:13px;line-height:1.5;padding:14px;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--muted)}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--muted-2);line-height:1.6;margin-top:10px;white-space:pre-wrap}
+  .add-actions{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap}
+  .feedback{font-family:var(--mono);font-size:12px}
+  .feedback.ok{color:var(--ok)}
+  .feedback.err{color:var(--accent)}
+
+  .empty-note{color:var(--muted);font-size:13px;text-align:center;padding:24px 0;line-height:1.5}
+
+  /* toast + undo */
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:60;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 18px;
+    display:flex;align-items:center;gap:16px;opacity:0;pointer-events:none;transition:.25s;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,.6);max-width:calc(100vw - 32px)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .toast-text{font-size:13.5px;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toast-undo{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);
+    border:1px solid var(--accent-dim);border-radius:8px;padding:7px 12px;flex:none;transition:.15s}
+  .toast-undo:hover{background:var(--accent);color:#fff}
+
+  /* history rows */
+  .hist-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .hist-row:last-child{border-bottom:none}
+  .hist-info{min-width:0}
+  .hist-undo{flex:none;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:6px 10px;transition:.15s}
+  .hist-undo:hover{color:var(--bone);border-color:var(--muted)}
+
+  /* sort select */
+  .sort-wrap{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .sort-wrap select{font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;
+    background:var(--bg);color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+  .sort-wrap select:focus{outline:none;border-color:var(--muted)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="wordmark"><span class="on">ON</span> <span class="deck">DECK</span></div>
+      <div class="tagline">the listening crate</div>
+    </div>
+    <button class="manage-btn" id="openManage">Manage crate</button>
+  </header>
+
+  <div class="progress">
+    <div class="progress-top">
+      <span class="cleared"><b id="clearedCount">0</b> of <span id="totalCount">0</span> cleared</span>
+      <span class="left" id="leftLabel"></span>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="chip" data-filter="any" aria-pressed="true">Any length</button>
+    <button class="chip" data-filter="short" aria-pressed="false">Short &middot; &le;40m</button>
+    <button class="chip" data-filter="mid" aria-pressed="false">Medium &middot; 41&ndash;55m</button>
+    <button class="chip" data-filter="long" aria-pressed="false">Long &middot; 56m+</button>
+  </div>
+
+  <div class="stage">
+    <!-- idle -->
+    <div class="idle" id="idle">
+      <div class="kicker">Can't decide?</div>
+      <div class="big">Pull something <em>random</em> from the crate</div>
+      <button class="spin" id="spinIdle">Spin</button>
+    </div>
+
+    <!-- result -->
+    <div class="result" id="result">
+      <div class="meta" id="meta"></div>
+      <div class="artist" id="artist"></div>
+      <div class="album-title" id="albumTitle"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="markBtn">Mark as listened</button>
+        <button class="btn btn-ghost" id="spinAgain">Spin again</button>
+      </div>
+      <div class="tracks" id="tracksBlock">
+        <h3>Tracklist</h3>
+        <div class="track-cols" id="trackCols"></div>
+      </div>
+    </div>
+
+    <!-- all cleared -->
+    <div class="cleared-state" id="clearedState" style="display:none">
+      <div class="big">Crate cleared</div>
+      <p id="clearedMsg"></p>
+      <button class="btn btn-ghost" id="clearedManage">Open crate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== undo toast ===== -->
+<div class="toast" id="toast">
+  <span class="toast-text" id="toastText"></span>
+  <button class="toast-undo" id="toastUndo">Undo</button>
+</div>
+
+<!-- ===== manage modal ===== -->
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Manage crate">
+  <div class="sheet-head">
+    <h2>Manage crate</h2>
+    <button class="x" id="closeSheet" aria-label="Close">&times;</button>
+  </div>
+  <div class="sheet-tabs" id="tabs">
+    <button class="tab" data-tab="crate" aria-selected="true">Crate</button>
+    <button class="tab" data-tab="history" aria-selected="false">History</button>
+    <button class="tab" data-tab="add" aria-selected="false">Add albums</button>
+    <button class="tab" data-tab="backup" aria-selected="false">Backup</button>
+  </div>
+  <div class="sheet-body">
+    <!-- crate pane -->
+    <div class="pane show" id="pane-crate">
+      <div class="crate-tools">
+        <label class="sort-wrap">Sort
+          <select id="sortSel">
+            <option value="original">Original</option>
+            <option value="az">Artist A&ndash;Z</option>
+            <option value="newest">Release &middot; newest</option>
+            <option value="oldest">Release &middot; oldest</option>
+            <option value="longest">Duration &middot; longest</option>
+            <option value="shortest">Duration &middot; shortest</option>
+          </select>
+        </label>
+        <button class="mini" id="hideListened">Hide listened</button>
+        <button class="mini danger" id="resetListened">Reset all to unlistened</button>
+      </div>
+      <div id="crateList"></div>
+    </div>
+    <!-- history pane -->
+    <div class="pane" id="pane-history">
+      <div id="historyList"></div>
+    </div>
+    <!-- add pane -->
+    <div class="pane" id="pane-add">
+      <div class="field-label">Paste albums (same format as your list)</div>
+      <textarea id="addBox" placeholder="Artist - Album Title&#10;Release Date: July 17, 2026&#10;Duration: 65 Minutes&#10;1. First Track&#10;2. Second Track (feat. Someone)&#10;..."></textarea>
+      <div class="hint">One or more albums. Each starts with an "Artist - Title" line, then Release Date, Duration, then the numbered tracklist. Two-disc albums: put "Disc 1:" / "Disc 2:" lines before each disc's tracks. Duplicates (same artist + title) are skipped.</div>
+      <div class="add-actions">
+        <button class="btn btn-primary" id="addBtn">Add to crate</button>
+        <span class="feedback" id="addFeedback"></span>
+      </div>
+    </div>
+    <!-- backup pane -->
+    <div class="pane" id="pane-backup">
+      <div class="hint" style="margin-top:0;margin-bottom:16px">Your crate and listened marks live in this browser. Export a backup before switching devices or clearing browser data, then import it on the other side.</div>
+      <div class="crate-tools">
+        <button class="mini" id="exportBtn">Export backup (.json)</button>
+        <button class="mini" id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+      <div class="feedback" id="backupFeedback" style="margin-top:6px"></div>
+      <div class="hint" style="margin-top:22px">Reset the whole app back to the original list (this clears your added albums and listened marks):</div>
+      <div class="crate-tools" style="margin-top:8px">
+        <button class="mini danger" id="factoryReset">Reset to original list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_ALBUMS = [{"artist":"6LACK","title":"Love Is the New Gangsta","release":"May 22, 2026","duration":"44 Minutes","tracks":["1. Bounty","2. Bird Flu","3. All That Matters (feat. Leon Thomas & AZ Chike)","4. Foot On My Neck","5. Wifey Baby Mama","6. I GUESS","7. Ashin' the Blunt (feat. Young Thug)","8. TRAUMA","9. Sunday Again (feat. 2 Chainz)","10. On Me (feat. Odeal)","11. Out of Body (feat. QUIN)","12. RUNNING LATE FREESTYLE (feat. Mereba)","13. Vision","14. Bear","15. story is mine"]},{"artist":"Action Bronson","title":"PLANET FROG","release":"May 8, 2026","duration":"32 Minutes","tracks":["1. PLANET FROG","2. LEBRON HENNESSY","3. OLYMPIC VINCE CARTER","4. VHS","5. TRICERATOPS (feat. Paul Wall & Lil Yachty)","6. PEPPERS (feat. Roc Marciano)","7. CONDOR","8. MANDEM (feat. Meyhem Lauren)","9. MY BLUE HEAVEN","10. IGUANA","11. MUTATIONS","12. CHUTNEY","13. SIMONE (feat. Clovis Ochin)"]},{"artist":"AZ","title":"Doe Or Die III","release":"May 8, 2026","duration":"34 Minutes","tracks":["1. The Origin (Intro)","2. No Need For Lactose","3. Gimme The World (feat. Jadakiss)","4. Uniqueness (feat. Mike & Keys)","5. So High (feat. Mumu Fresh)","6. Ho Happy (Skit) (feat. Mike & Keys)","7. Still Jackie","8. Surprise (feat. Nas & Mike & Keys)","9. Fresh Water","10. Winners Win (feat. Amar Noir)","11. I Was Once There Too","12. Love My Life","13. We Made It (Outro)"]},{"artist":"Black Milk","title":"CEREMONIAL","release":"May 8, 2026","duration":"43 Minutes","tracks":["1. THE FAZES (feat. Ian Fink & Sasha Kashperko)","2. Feel Sum'n Heal Sum'n","3. In the Sky","4. Crash Test Dummy","5. Dreams Not Only Made At Night","6. The Lift Off","7. Act Like (feat. Brandon Myster)","8. Never Never","9. CEREMONY","10. OK... Nah (feat. Saba)","11. Right Time","12. YOUIT (Truth Be Told) (feat. BJ the Chicago Kid & Chris Sholar)"]},{"artist":"Dave East & Harry Fraud","title":"Price of Pain","release":"July 29, 2026","duration":"47 Minutes","tracks":["1. Papaya Juice","2. Everything's Up (feat. Benny the Butcher)","3. Hot Peas & Butter (feat. AZ)","4. Minding My Business","5. Follow My Lead (feat. Snoop Dogg)","6. Rasta Pasta","7. Alley Oop (feat. Styles P)","8. Clyde Frazier","9. No One Like You","10. Thirsty","11. Life Cycle","12. Hu$$le in My Nature (feat. Cruch Calhoun)","13. Stay with Me","14. Fill a Casket"]},{"artist":"Dijon","title":"Baby","release":"August 15, 2025","duration":"37 Minutes","tracks":["1. Baby!","2. Another Baby!","3. HIGHER!","4. (Freak It)","5. Yamaha","6. FIRE!","7. (Referee)","8. Rewind","9. my man","10. loyal & marie","11. Automatic","12. Kindalove","13. Nü Diamond"]},{"artist":"Don Toliver","title":"OCTANE","release":"January 30, 2026","duration":"49 Minutes","tracks":["1. E85","2. Body","3. Rendezvous (feat. Yeat)","4. Secondhand (feat. Rema)","5. Tiramisu","6. ATM","7. Long Way To Calabasas","8. Rosary (feat. Travis Scott)","9. All The Signs (feat. Teezo Touchdown)","10. Call Back","11. Tuition","12. K9 (feat. SahBabii)","13. Excavator","14. Gemstone","15. OPPOSITE","16. TMU","17. Pleasure's Mine","18. Sweet Home"]},{"artist":"Drake","title":"HABIBTI","release":"May 15, 2026","duration":"36 Minutes","tracks":["1. Rusty Intro","2. WNBA","3. Slap The City (feat. Qendresa)","4. High Fives","5. Hurrr Nor Thurrr (feat. Sexyy Red)","6. I'm Spent (feat. Loe Shimmy)","7. Classic","8. Gen 5","9. White Bone","10. Fortworth (feat. PARTYNEXTDOOR)","11. Prioritizing"]},{"artist":"Drake","title":"MAID OF HONOUR","release":"May 15, 2026","duration":"45 Minutes","tracks":["1. Hoe Phase","2. Road Trips","3. Outside Tweaking (feat. Stunna Sandy)","4. Cheetah Print (feat. Sexyy Red)","5. Which One (feat. Central Cee)","6. Amazing Shape (feat. Popcaan)","7. BBW","8. True Bestie (feat. Iconic Savvy)","9. Where's Your Stuff Interlude","10. New Bestie","11. Q&A","12. Stuck","13. Goose and The Juice","14. Princess"]},{"artist":"Freddie Gibbs","title":"You Only Die 1nce (Deluxe)","release":"June 5, 2026","duration":"27 Minutes","tracks":["1. Outside","2. Pain From Paradise","3. Axxtion","4. Ruthless Remix (feat. Leon Thomas)","5. Immigrants","6. Summertime Homicide","7. Torture","8. Heartbreak In Heaven","9. Rabbit Mode","10. Nobody"]},{"artist":"Future","title":"The Real Me","release":"July 10, 2026","duration":"59 Minutes","tracks":["1. F**k A Interview","2. One Two","3. No Misery","4. California Girls","5. Tank Top Playa","6. Weight Up","7. Konnichiwa","8. Trench Coat","9. Snow in Skyami","10. Build A B**ch","11. Radio","12. 2018","13. Money Over Everything","14. Off The Hinge","15. If I Could","16. Big Moment","17. Cast A Spell","18. Kick","19. Hollywood","20. Feeling I Give","21. Alice","22. Eye To Eye"]},{"artist":"Hit-Boy","title":"HITstory 2: Success Is A Dirty Word","release":"June 13, 2026","duration":"51 Minutes","tracks":["1. Intro","2. Success Is A Dirty Word","3. Clash","4. Do It (feat. Quavo)","5. Friday (feat. Dom Kennedy)","6. S&V (feat. Jazze Pha)","7. Franchise Boy","8. Can't Ignore It","9. National TV","10. High Speed Chase","11. American Pie","12. Talk Nice To Me","13. Love Story","14. New Money","15. Stitched Lip (feat. Chase N. Cashe & Johnathan Hulett)","16. Doin A Look (feat. Ty Dolla $ign & Ab-Soul)","17. Watch It Come True (feat. James Fauntleroy)"]},{"artist":"Infinity Song","title":"Metamorphosis Complete","release":"June 14, 2024","duration":"45 Minutes","tracks":["1. I Want You Back","2. Lotus","3. Metamorphosis","4. Hater's Anthem","5. Sinking Boat","6. Comedy","7. More Beautiful","8. Dreams","9. Slow Burn","10. Pink Sky","11. No One Comes Close","12. The Sunshine"]},{"artist":"Isaiah Rashad","title":"IT'S BEEN AWFUL","release":"May 1, 2026","duration":"55 Minutes","tracks":["1. The New Sublime","2. M.O.M.","3. Same Sh!t","4. Boy in Red (feat. SZA)","5. Supaficial","6. Scared 2 Look Down","7. Happy Hour","8. Do I Look High? (feat. Julian Sintonia)","9. Ain't Givin' Up","10. GTKY","11. Cameras (feat. Dominic Fike)","12. Act Normal","13. 10 States Away","14. Nuthin 2 Hide","15. Superpwrs","16. 719 Freestyle"]},{"artist":"Jay Worthy","title":"Once Upon A Time: The Soundtrack","release":"May 1, 2026","duration":"44 Minutes","tracks":["1. Intro (feat. Yellowdawg)","2. Checkmate (feat. Mozzy)","3. I Wish (feat. LNDN DRGS)","4. The Big (feat. LE$ & Premo Rice)","5. I Can't Relate (feat. 9th Wonder)","6. 2night","7. Visions (feat. Method Man)","8. Same Song (feat. Shyheim)","9. The 4 Tops (feat. T.F, Sha Hef & Vicasso)","10. Mail Order Bride (feat. A$AP Twelvyy & Isa P Anchorman)","11. Rosie Perez (feat. Boldy James & TAS)","12. Kalifornication (feat. YG Hootie)","13. Ghetto Smile Interlude (feat. Gwen Bunn)","14. No Price (feat. Novelist)","15. IF I (feat. Rome Streetz & Evidence)","16. Outro (feat. Yellowdawg)"]},{"artist":"Jill Scott","title":"To Whom This May Concern","release":"February 13, 2026","duration":"59 Minutes","tracks":["1. Dope Shit (feat. Maha Adachi Earth)","2. Be Great (feat. Trombone Shorty)","3. Beautiful People","4. Offdaback","5. Norf Side (feat. Tierra Whack)","6. Disclaimer","7. Pay U on Tuesday","8. Pressha","9. BPOTY (feat. Too $hort)","10. Me 4","11. The Math","12. A Universe","13. Liftin' Me Up","14. Ode to Nikki (feat. Ab-Soul)","15. Don't Play","16. To B Honest (feat. JID)","17. Right Here Right Now","18. ÀṢẸ","19. Sincerely"]},{"artist":"JPEGMAFIA","title":"EXPERIMENTAL RAP","release":"May 21, 2026","duration":"53 Minutes","tracks":["1. 投影の芸術","2. babygirl","3. Burning Hammer","4. $ (Money)","5. Pop this Heat","6. Meet the Dealers","7. head","8. Degenerate's Prayer","9. The Ghost Of Emmett Till","10. Since I Met Ye","11. ¥ (Yen)","12. GYBB","13. TSAR BOMBA","14. Mask On","15. His Will","16. Lights","17. New Era","18. One Day it Will Be Over","19. War Over Land","20. Bridges on Fire (feat. Buzzy Lee)","21. No Strippers In Heaven","22. 內戰","23. Chat","24. The 1st Amendment","25. You Will Always Lose Money Chasing Women, But You Will Never Lose"]},{"artist":"Juicy J & Project Pat","title":"Dem Goats","release":"July 10, 2026","duration":"60 Minutes","tracks":["1. On The Porch 2026","2. Still The Same","3. Eye For A Eye","4. Out Of Order","5. Southern Hospitality","6. Don't Do It","7. Bank Of (feat. That Mexican OT)","8. Wasting Time (feat. Anderson .Paak)","9. Blessing In Disguise","10. Cut All That","11. Free My Dog","12. Never Coming Back","13. These Streets","14. Life Be Lifing (feat. Hanumankind)","15. Choose Wisely (feat. Killer Mike & Anthony Q.)","16. Hold On","17. Tap (feat. KARRAHBOOO)","18. Red Carpet Treatment","19. To Be Real Witcha (feat. Snoop Dogg)","20. Yes Lord (feat. Lecrae & Kenneth Whalum)"]},{"artist":"Kanye West","title":"BULLY - DELUXE","release":"June 19, 2026","duration":"47 Minutes","tracks":["1. King","2. This a Must","3. Father (feat. Travis Scott)","4. All the Love (feat. André Troutman)","5. Punch Drunk","6. Whatever Works","7. Mama's Favorite (feat. Nine Vicious)","8. Sisters and Brothers","9. Bully (feat. CeeLo Green)","10. Highs and Lows","11. I Can't Wait (feat. Ms. Lauryn Hill)","12. White Lines (feat. André Troutman)","13. Circles (feat. Don Toliver)","14. Preacher Man","15. Beauty and the Beast","16. Damn","17. Last Breath (feat. Peso Pluma)","18. This One Here","19. OK (feat. Don Toliver)","20. Mission Control"]},{"artist":"Key Glock","title":"PROJECT X","release":"June 19, 2026","duration":"47 Minutes","tracks":["1. Mannish","2. 50 Hoes","3. Hardknock","4. Face Down","5. Big 5","6. 6AM","7. Dummy","8. Drug Luv","9. Work It","10. Faded","11. Sick","12. SRT Muzik","13. Benzo","14. Mannie Fresh","15. Cherry on Top","16. Loco","17. Go","18. Seeing Red","19. Houston Flow","20. Reminiscing"]},{"artist":"Larry June","title":"Who Coppin","release":"July 17, 2026","duration":"51 Minutes","tracks":["1. Go Outside Intro (feat. Wallo267)","2. The Machinist","3. Casual Monday","4. Better Decisions","5. Everything Liquid","6. Organic Motion (feat. DJ Fresh)","7. The Smooth Kind","8. California Dream (feat. Jhené Aiko)","9. Pretty Green Eyes (feat. Jay Versace & Musiq Soulchild)","10. Win or Lose (feat. B-Legit)","11. 3 Calculators","12. Flex (feat. Swizz Beatz)","13. Who Coppin","14. Organically Slidin'","15. Larry's Diner Pt. 2","16. God Got Us (Ain't Too Many)"]},{"artist":"Latto","title":"Big Mama","release":"May 29, 2026","duration":"56 Minutes","tracks":["1. Business & Personal (Intro)","2. Get Money Girl","3. GOMF (feat. GloRilla)","4. Chrome Heart Diaper Bag","5. Okayyy (feat. Doja Cat)","6. Hostage (feat. 21 Savage)","7. Death Row","8. Onnat","9. Gimme Dat","10. Fallin'","11. Need Luv 2 (feat. Sexyy Red)","12. Make Me (feat. Mariah the Scientist)","13. Naked","14. Anxious (feat. Odeal & Wizkid)","15. 4L (feat. Teyana Taylor)","16. Daddy's Girl Interlude","17. Mama (feat. Jelly Roll)","18. Somebody"]},{"artist":"Nicholas Craven & Boldy James","title":"Trapper's Alley 3: Hell or High Water","release":"June 19, 2026","duration":"33 Minutes","tracks":["1. Summer's Eve","2. Mama Maxine (feat. 218Bojay)","3. My Last Try","4. Beautiful Snow (feat. Chip$ & Dave Hill)","5. False Accusations","6. Hamburger Helper (feat. Chip$)","7. Powerhouse (feat. Chip$ & Lethalias Grain)","8. Grinding My Gears","9. Don't Tell Me (Trinidadian James)","10. Death & Taxes"]},{"artist":"PFG","title":"NEVER SAY DIE","release":"July 10, 2026","duration":"33 Minutes","tracks":["1. Mighty Mouse (feat. J. Cole)","2. Mr. Biggs","3. In Rotation Left","4. End of the Day","5. Whole House (feat. J. Cole)","6. 910 We Get Active","7. Murk Mob","8. Twins Forever","9. Handguns & Hang Gliders","10. Twins Forever (Remix) (feat. J. Cole)"]},{"artist":"Reuben Vincent & 9th Wonder","title":"WELCOME HOME","release":"October 24, 2025","duration":"59 Minutes","tracks":["1. Homecoming","2. Day By Day!!","3. God's Children (feat. Ab-Soul)","4. Gotta Get It","5. Queen City","6. Get Up (Get Down)","7. Issa Dee (feat. Kelly Moonstone)","8. Anything","9. So I Pray (feat. Kelly Moonstone, Heather Victoria, Jalisa & Dinner Party)","10. Dre & Sidney (feat. Raheem DeVaughn & Sweata)","11. Get It Girl (feat. Wale)","12. Sweet & Good","13. Just 4 Me (feat. Sweata & Jourden Cox)","14. Cup Of Love (Fools) (feat. Raphael Saadiq)","15. I'm Good (feat. Marco Plus, Jalisa & DL Zene)","16. In My Life"]},{"artist":"Rick Ross","title":"Set In Stone","release":"July 17, 2026","duration":"65 Minutes","tracks":["1. Caviar Bumps","2. Mahogany Caskets (feat. T.I.)","3. Minks In Miami (feat. French Montana & Max B)","4. Face Down (feat. Rich The Kid)","5. Ring Around The Rolls (feat. YFN Lucci)","6. Camel Meat (feat. Deon Cole)","7. Maybach Music VII (feat. Don Toliver & Jeezy)","8. Living Large (feat. BigXthaPlug)","9. Purple Fentanyl","10. #23","11. Porsche GT3 - RS","12. City Lights (feat. The-Dream)","13. Chain of Command (feat. Nino Breeze & Big Tony)","14. Remarkable Hussle (feat. Leon Thomas)","15. Big Fish (feat. Gucci Mane)","16. Diamonds Never Die (feat. Kodak Black & Ball Greezy)","17. She's My Star (feat. Yung Miami)","18. Do It One Time (feat. Young Breed & DJ Nasty)","19. The Algorithm"]},{"artist":"Rome Streetz","title":"Sock It 2 My Pocket","release":"July 17, 2026","duration":"43 Minutes","tracks":["1. Yellow Brick Road","2. Son Of A Gun","3. '95 Mega On Shrooms (feat. Styles P)","4. Belt 2 Ass","5. .22","6. Prada In The Polaroid (feat. Lloyd Banks)","7. Cocaine Coltraine","8. Marathon Or Race (feat. Westside Gunn)","9. Dreamcatcher","10. Time & Place (feat. IDK)","11. High Speed","12. Shoot Your Trophies","13. I Don't Know","14. Taylor Made Wave (feat. OX OMNI)","15. Elevate"]},{"artist":"Snoop Dogg","title":"10 Til' Midnight","release":"April 10, 2026","duration":"35 Minutes","tracks":["1. Step (feat. Swizz Beatz)","2. Lied 2 U","3. Slid Off","4. Daddy Rich (feat. Richard Pryor)","5. Stop Counting My Poccets","6. OG to BG","7. Dogg Wattup Doe (feat. Peezy)","8. Leave That Dogg Alone","9. Pop My Shit (feat. Trinidad James)","10. 17 Rules","11. Bread Under The Bed (feat. Stresmatic)","12. No Ticcet Needed (feat. Kanobby)","13. Long Beachin' (feat. Shawn Louisiana)","14. QTSAMYAH (feat. October London)"]},{"artist":"Steve Lacy","title":"Oh Yeah?","release":"July 17, 2026","duration":"40 Minutes","tracks":["1. Oh Yeah?","2. Is It Cool? (feat. SZA)","3. The Feeling","4. Pure Colour (feat. Erykah Badu)","5. Show You Me","6. Doom","7. Nothing","8. Lovesexdrugbomb (feat. Cecile Believe)","9. Nice Shoes / In Your World","10. Bebe"]},{"artist":"Syd","title":"Beard","release":"July 17, 2026","duration":"41 Minutes","tracks":["1. Walls","2. Callin (feat. Blu June)","3. Jasmin 17","4. My Love","5. Always Be Mine (feat. Jordan Ward)","6. Closet (feat. CUBE)","7. Bad Guys","8. GMFU (feat. Big Sean)","9. Do Better","10. Any Time (feat. James Fauntleroy)","11. Water","12. 2 Many Days"]},{"artist":"T.I.","title":"KILL THE KING","release":"June 26, 2026","duration":"51 Minutes","tracks":["1. A King's Thought (feat. Heiress Harris)","2. See Wh'Am Sayin","3. Let 'Em Know","4. Where I'm From (feat. Anderson .Paak)","5. Rant","6. Mr. Him","7. How It Went (feat. The-Dream)","8. Dope Boys Academy (feat. T-Pain, Young Jeezy & 2 Chainz)","9. Pistol on the Dance Floor","10. And Won't (feat. Summer Walker)","11. Gorgeous (feat. Usher)","12. We On","13. LLOGCLAY (feat. YoungBoy Never Broke Again)","14. Ego (feat. OMG Girlz)","15. Trauma Bond (feat. Marching Crimson Pipers)","16. Represent a Time (feat. SWEATA & Young Dro)","17. Big Dog (feat. Buddy Red, Billie Lennox & EJ Jones)","18. Continental"]},{"artist":"The-Dream","title":"LoveHate II","release":"July 10, 2026","duration":"67 Minutes","tracks":["1. 1 of 1","2. Bring That Body","3. Love Sound","4. Tampa (feat. Usher)","5. 24/7","6. Powder Coat (feat. Pusha T & Swizz Beatz)","7. Be My Lady (feat. T.I.)","8. Virgo Type Shit","9. State of Peaches","10. Favorite","11. Obviously / Juxtapose","12. Papi Te Ama (feat. Kelly Rowland)","13. No Hands","14. A Cold Summer","15. Blow My Mind","16. I, Remember","17. Perfect (feat. Rick Ross)"]},{"artist":"Thundercat","title":"Distracted","release":"April 3, 2026","duration":"47 Minutes","tracks":["1. Candlelight","2. No More Lies (feat. Tame Impala)","3. She Knows Too Much (feat. Mac Miller)","4. I Did This To Myself (feat. Lil Yachty)","5. Funny Friends (feat. A$AP Rocky)","6. What Is Left To Say (feat. The Lemon Twigs)","7. I Wish I Didn't Waste Your Time","8. Anakin Learns His Fate","9. Walking on the Moon","10. This Thing We Call Love (feat. Channel Tres)","11. ThunderWave (feat. WILLOW)","12. Pozole","13. A.D.D. Through the Roof","14. Great Americans","15. You Left Without Saying Goodbye"]},{"artist":"Tory Lanez","title":"Made You Think I Was Gone ...But","release":"July 17, 2026","duration":"78 Minutes","tracks":["Disc 1:","1. Revenge of Fargo","2. Crodie From The 9 // Guy In My City","3. Who ?","4. Jalen Brunson","5. Heartbreak From Cell 210","6. Deen & AB // SGA","7. Gyal Gimmie","8. Hasty Market // Toronto (feat. HollywoodSos)","9. Penthouse Blue","10. Many Men Pt. 2 (feat. VV$ KEN)","11. GYMR","12. 9Side Bodmon","Disc 2:","1. The Over Song","2. Swangin'","3. Favorite Eater","4. Clouded // TJ's Interlude","5. Kody","6. Streets Want You Back","7. Dancers Remorse (Sin City)","8. Scarborough to Dubai","9. First Day Out (R&B Version)","10. Wrong Moves","11. I Know Everything"]},{"artist":"Vince Staples","title":"Cry Baby","release":"June 5, 2026","duration":"35 Minutes","tracks":["1. Blackberry Marmalade","2. Go! Go! Gorilla","3. White Flag","4. The Running Man","5. TV Guide","6. The Big Bad Wolf","7. Only In America","8. Do You Know The Devil","9. Cotton","10. 7 In The Morning"]},{"artist":"Wale","title":"everything is a lot.","release":"November 14, 2025","duration":"53 Minutes","tracks":["1. Conundrum","2. Belly","3. Where to Start","4. Blanco","5. Michael Fredo (Intro)","6. Michael Fredo","7. Power and Problems","8. Mirroronnabenz (feat. BNYX)","9. Watching Us (feat. Leon Thomas)","10. YSF (feat. Teni & Seyi Vibez)","11. Tomorrow Today","12. Big Head (feat. ODUMODUBLVCK)","13. City on Fire (feat. Odeal)","14. Fly Away","15. Corner Bottles","16. Like I (feat. Andra Day)","17. Survive (with Ty Dolla $ign, feat. Nino Paid)","18. Lonely (feat. Shaboozey)"]},{"artist":"Wiki","title":"Ancient History","release":"June 12, 2026","duration":"45 Minutes","tracks":["1. GTFOH","2. Right Away","3. One Time","4. Park","5. IHNY","6. Bloom (feat. duendita)","7. Old Gods","8. Bourbon","9. All In The Lining (feat. Your Old Droog)","10. Marm Era","11. Had Your Fun","12. Something New (feat. Salimata)","13. 7 Deadly Sins","14. Ancient History"]},{"artist":"YG","title":"The Gentlemen's Club","release":"June 19, 2026","duration":"55 Minutes","tracks":["1. Intro (The Gentlemen's Club)","2. OMG (feat. Pusha T)","3. Kudos","4. Hitman","5. Simon Says (feat. Isaiah Falls, Odeal & Sasha Keable)","6. On the Low (feat. Tyler, The Creator)","7. We Know the Truth","8. Hollywood (feat. Shoreline Mafia)","9. Gang Bizness (feat. PayGotti)","10. Ready to Die (Hitman Response)","11. Writing My Wrongs (feat. Ogi)","12. Dinner Dates & Heart Breaks","13. Tiffany","14. Insecure (feat. JID & Ab-Soul)","15. Mid Life Crisis (feat. Buddy)"]}];
+
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#0D0D0F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const STORE_KEY = 'ondeck.v1';
+
+/* ---------- storage ---------- */
+function slug(a){return (a.artist+'|'+a.title).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function safeGet(){try{return JSON.parse(localStorage.getItem(STORE_KEY))||null}catch(e){return null}}
+function safeSet(o){try{localStorage.setItem(STORE_KEY,JSON.stringify(o))}catch(e){}}
+
+let state = load();
+function load(){
+  const saved = safeGet();
+  if(saved && Array.isArray(saved.albums)){
+    const listened=new Set(saved.listened||[]);
+    const log = Array.isArray(saved.log) ? saved.log.slice() : [...listened].map(id=>({id,at:null}));
+    return {albums:saved.albums, listened, log, filter:saved.filter||'any',
+            hideListened:!!saved.hideListened, sort:saved.sort||'original'};
+  }
+  const albums = DEFAULT_ALBUMS.map(a=>({...a,id:slug(a)}));
+  return {albums, listened:new Set(), log:[], filter:'any', hideListened:false, sort:'original'};
+}
+function persist(){
+  safeSet({albums:state.albums, listened:[...state.listened], log:state.log,
+           filter:state.filter, hideListened:state.hideListened, sort:state.sort});
+}
+function logAdd(id){state.log.push({id,at:Date.now()});}
+function logRemoveLast(id){for(let i=state.log.length-1;i>=0;i--){if(state.log[i].id===id){state.log.splice(i,1);return;}}}
+function logRemoveAll(id){state.log=state.log.filter(e=>e.id!==id);}
+
+/* ---------- helpers ---------- */
+function durMin(a){const m=(a.duration||'').match(/\d+/);return m?parseInt(m[0],10):0;}
+function matchesFilter(a,f){const d=durMin(a);
+  if(f==='short')return d>0&&d<=40;
+  if(f==='mid')return d>=41&&d<=55;
+  if(f==='long')return d>=56;
+  return true;}
+function eligible(){return state.albums.filter(a=>!state.listened.has(a.id)&&matchesFilter(a,state.filter));}
+
+/* ---------- elements ---------- */
+const el=id=>document.getElementById(id);
+let current=null;
+
+/* ---------- progress ---------- */
+function renderProgress(){
+  const total=state.albums.length;
+  const cleared=state.albums.filter(a=>state.listened.has(a.id)).length;
+  el('clearedCount').textContent=cleared;
+  el('totalCount').textContent=total;
+  el('barFill').style.width=total?(cleared/total*100)+'%':'0%';
+  const leftInFilter=eligible().length;
+  el('leftLabel').textContent = state.filter==='any' ? (total-cleared)+' left' : leftInFilter+' left in filter';
+}
+
+/* ---------- spin ---------- */
+let reeling=false;
+function spin(){
+  if(reeling)return;
+  const pool=eligible();
+  if(pool.length===0){showCleared();return;}
+  let pick;
+  if(pool.length===1){pick=pool[0];}
+  else{do{pick=pool[Math.floor(Math.random()*pool.length)];}while(current&&pick.id===current.id);}
+
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el('idle').style.display='none';
+  el('clearedState').style.display='none';
+  el('result').classList.add('show');
+
+  if(reduce||pool.length<2){renderResult(pick);return;}
+
+  // reel animation: flash a few titles then land
+  reeling=true;
+  const titleEl=el('albumTitle');
+  titleEl.className='album-title reeling';
+  el('meta').textContent='';el('artist').textContent='';el('tracksBlock').style.display='none';
+  el('markBtn').disabled=true;el('spinAgain').disabled=true;
+  let ticks=0;const max=10;
+  const timer=setInterval(()=>{
+    const r=pool[Math.floor(Math.random()*pool.length)];
+    titleEl.textContent=(r.title||r.artist).toUpperCase();
+    ticks++;
+    if(ticks>=max){clearInterval(timer);reeling=false;
+      el('markBtn').disabled=false;el('spinAgain').disabled=false;
+      renderResult(pick);}
+  },60);
+}
+
+function renderResult(a){
+  current=a;
+  const dm=durMin(a);
+  el('meta').innerHTML=[
+    a.release||'', (dm?dm+' min':''), (a.tracks.filter(t=>/^\d+\./.test(t)).length+' tracks')
+  ].filter(Boolean).map(s=>`<span>${escapeHtml(s)}</span>`).join('<span class="dot">&bull;</span>');
+  el('artist').textContent=a.artist;
+  const t=el('albumTitle');
+  if(a.title){t.className='album-title';t.textContent=a.title.toUpperCase();}
+  else{t.className='album-title';t.innerHTML='<span class="no-title">(no album title given)</span>';}
+
+  // tracklist
+  const cols=el('trackCols');cols.innerHTML='';
+  a.tracks.forEach(line=>{
+    const disc=line.match(/^Disc\s+\d+/i);
+    if(disc){const d=document.createElement('div');d.className='disc-label';d.textContent=line;cols.appendChild(d);return;}
+    const m=line.match(/^(\d+)\.\s*(.+)$/);
+    if(!m)return;
+    const row=document.createElement('div');row.className='track';
+    const body=m[2].replace(/\s*(\(feat\.[^)]*\))/i,'<span class="feat"> $1</span>');
+    row.innerHTML=`<span class="n">${m[1]}</span><span class="t">${body}</span>`;
+    cols.appendChild(row);
+  });
+  el('tracksBlock').style.display='';
+}
+
+function showCleared(){
+  el('idle').style.display='none';
+  el('result').classList.remove('show');
+  el('clearedState').style.display='';
+  const f=state.filter;
+  el('clearedMsg').textContent = f==='any'
+    ? "You've listened to everything in the crate. Add more albums, or reset marks to run it back."
+    : "Nothing left in this length. Switch filters, add albums, or reset your marks.";
+}
+
+/* ---------- mark listened ---------- */
+function markListened(){
+  if(!current)return;
+  const marked=current;
+  state.listened.add(marked.id);
+  logAdd(marked.id);
+  persist();renderProgress();renderHistory();
+  showToast(marked);
+  spin(); // advance to the next unlistened pick
+}
+
+/* ---------- undo toast ---------- */
+let toastTimer=null;
+function showToast(alb){
+  const name=alb.title?alb.title:alb.artist;
+  el('toastText').textContent='Logged \u201C'+name+'\u201D';
+  el('toastUndo').onclick=()=>undoMark(alb.id);
+  el('toast').classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,6000);
+}
+function hideToast(){el('toast').classList.remove('show');clearTimeout(toastTimer);}
+function undoMark(id){
+  state.listened.delete(id);
+  logRemoveLast(id);
+  persist();renderProgress();renderCrate();renderHistory();
+  hideToast();
+  const alb=state.albums.find(a=>a.id===id);
+  if(alb){el('idle').style.display='none';el('clearedState').style.display='none';
+    el('result').classList.add('show');renderResult(alb);}
+}
+
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---------- filters ---------- */
+el('filters').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  state.filter=b.dataset.filter;persist();
+  [...el('filters').children].forEach(c=>c.setAttribute('aria-pressed',c===b));
+  renderProgress();
+  // reset stage to idle so the next spin respects the new filter
+  current=null;el('result').classList.remove('show');el('clearedState').style.display='none';el('idle').style.display='';
+});
+
+/* ---------- buttons ---------- */
+el('spinIdle').onclick=spin;
+el('spinAgain').onclick=spin;
+el('markBtn').onclick=markListened;
+el('clearedManage').onclick=()=>openSheet('crate');
+
+/* ---------- modal ---------- */
+function openSheet(tab){el('overlay').classList.add('show');el('sheet').classList.add('show');if(tab)selectTab(tab);renderCrate();renderHistory();}
+function closeSheet(){el('overlay').classList.remove('show');el('sheet').classList.remove('show');}
+el('openManage').onclick=()=>openSheet('crate');
+el('closeSheet').onclick=closeSheet;
+el('overlay').onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+
+function selectTab(name){
+  [...el('tabs').children].forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===name));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('show',p.id==='pane-'+name));
+}
+el('tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(t)selectTab(t.dataset.tab);});
+
+/* ---------- crate list ---------- */
+function releaseTime(a){const d=new Date(a.release);return isNaN(d.getTime())?0:d.getTime();}
+function sortAlbums(albums,mode){
+  const arr=[...albums];
+  if(mode==='az')arr.sort((a,b)=>(a.artist+a.title).localeCompare(b.artist+b.title));
+  else if(mode==='newest')arr.sort((a,b)=>releaseTime(b)-releaseTime(a));
+  else if(mode==='oldest')arr.sort((a,b)=>releaseTime(a)-releaseTime(b));
+  else if(mode==='longest')arr.sort((a,b)=>durMin(b)-durMin(a));
+  else if(mode==='shortest')arr.sort((a,b)=>durMin(a)-durMin(b));
+  return arr; // 'original' -> unchanged
+}
+function renderCrate(){
+  const list=el('crateList');if(!list)return;list.innerHTML='';
+  let albums=sortAlbums(state.albums,state.sort);
+  if(state.hideListened)albums=albums.filter(a=>!state.listened.has(a.id));
+  if(albums.length===0){list.innerHTML='<div class="empty-note">Nothing here yet. Add albums from the “Add albums” tab.</div>';return;}
+  albums.forEach(a=>{
+    const done=state.listened.has(a.id);
+    const row=document.createElement('div');
+    row.className='crate-row'+(done?' done':'');
+    const title=a.title?`${a.artist} — ${a.title}`:a.artist;
+    row.innerHTML=`
+      <button class="check" title="Toggle listened">${CHECK_SVG}</button>
+      <div class="crate-info">
+        <div class="ci-title">${escapeHtml(title)}</div>
+        <div class="ci-meta">${escapeHtml(a.release||'')} · ${durMin(a)} min</div>
+      </div>
+      <button class="del" title="Remove from crate">&times;</button>`;
+    row.querySelector('.check').onclick=()=>{
+      if(done){state.listened.delete(a.id);logRemoveLast(a.id);}
+      else{state.listened.add(a.id);logAdd(a.id);}
+      persist();renderProgress();renderCrate();renderHistory();
+    };
+    row.querySelector('.del').onclick=()=>{
+      state.albums=state.albums.filter(x=>x.id!==a.id);
+      state.listened.delete(a.id);logRemoveAll(a.id);
+      if(current&&current.id===a.id){current=null;el('result').classList.remove('show');el('idle').style.display='';}
+      persist();renderProgress();renderCrate();renderHistory();
+    };
+    list.appendChild(row);
+  });
+}
+el('sortSel').onchange=()=>{state.sort=el('sortSel').value;persist();renderCrate();};
+el('hideListened').onclick=()=>{state.hideListened=!state.hideListened;el('hideListened').textContent=state.hideListened?'Show all':'Hide listened';persist();renderCrate();};
+el('resetListened').onclick=()=>{if(confirm('Clear every listened mark? Your albums stay; they all go back to unlistened.')){state.listened.clear();state.log=[];persist();renderProgress();renderCrate();renderHistory();}};
+
+/* ---------- history ---------- */
+function fmtDate(ts){if(!ts)return 'date unknown';
+  return new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}
+function renderHistory(){
+  const wrap=el('historyList');if(!wrap)return;wrap.innerHTML='';
+  const entries=[...state.log].reverse(); // newest first
+  if(entries.length===0){wrap.innerHTML='<div class="empty-note">No albums marked yet. Once you cross things off, they show up here with the date.</div>';return;}
+  entries.forEach(e=>{
+    const a=state.albums.find(x=>x.id===e.id);
+    const title=a?(a.title?a.artist+' \u2014 '+a.title:a.artist):e.id;
+    const row=document.createElement('div');row.className='hist-row';
+    row.innerHTML=`<div class="hist-info crate-info"><div class="ci-title">${escapeHtml(title)}</div>
+      <div class="ci-meta">Marked ${fmtDate(e.at)}</div></div>
+      <button class="hist-undo">Unmark</button>`;
+    row.querySelector('.hist-undo').onclick=()=>{
+      state.listened.delete(e.id);logRemoveLast(e.id);
+      persist();renderProgress();renderCrate();renderHistory();
+    };
+    wrap.appendChild(row);
+  });
+}
+
+/* ---------- parser (TickTick / example format) ---------- */
+function parseAlbums(text){
+  const rawLines=text.replace(/\r/g,'').split('\n');
+  // clean: strip TickTick footers / page numbers if pasted from PDF export
+  const lines=rawLines.map(l=>l.replace(/^\s*TickTick\s*/,'').replace(/\s+\d+\/\d+\s*$/,'').trim());
+  const rdIdx=[];lines.forEach((l,i)=>{if(/^Release Date:/i.test(l))rdIdx.push(i);});
+  const prevNonEmpty=i=>{let j=i-1;while(j>=0&&lines[j]==='')j--;return j;};
+  const albums=[];const seenHeaders=new Set();
+  rdIdx.forEach((i,k)=>{
+    const h=prevNonEmpty(i);const header=lines[h]||'';
+    if(!header||/^\d+\./.test(header))return; // skip stray continuations
+    let end=lines.length;
+    if(k+1<rdIdx.length){end=prevNonEmpty(rdIdx[k+1]);}
+    const block=lines.slice(i,end);
+    let release='',duration='';
+    block.forEach(b=>{
+      if(/^Release Date:/i.test(b))release=b.split(':').slice(1).join(':').trim();
+      else if(/^Duration:/i.test(b))duration=b.split(':').slice(1).join(':').trim();
+    });
+    // tracks with disc + number dedup
+    let disc=0;const seen=new Map();const discOrder=[];
+    block.forEach(b=>{
+      const dm=b.match(/^Disc\s+(\d+)/i);
+      if(dm){disc=parseInt(dm[1],10);if(!discOrder.includes(disc))discOrder.push(disc);return;}
+      const tm=b.match(/^(\d+)\.\s*(.+)$/);
+      if(tm){if(disc===0&&!discOrder.includes(0))discOrder.push(0);const key=disc+'-'+tm[1];if(!seen.has(key))seen.set(key,b);}
+    });
+    const multi=discOrder.filter(d=>d!==0).length>1;
+    const tracks=[];
+    discOrder.forEach(d=>{
+      const nums=[...seen.keys()].filter(kk=>kk.startsWith(d+'-')).map(kk=>parseInt(kk.split('-')[1],10)).sort((x,y)=>x-y);
+      if(multi&&d!==0)tracks.push('Disc '+d+':');
+      nums.forEach(n=>tracks.push(seen.get(d+'-'+n)));
+    });
+    if(tracks.length===0)return;
+    let artist=header,title='';
+    if(header.includes(' - ')){const idx=header.indexOf(' - ');artist=header.slice(0,idx).trim();title=header.slice(idx+3).trim();}
+    const alb={artist,title,release,duration,tracks};alb.id=slug(alb);
+    if(!seenHeaders.has(alb.id)){seenHeaders.add(alb.id);albums.push(alb);}
+  });
+  return albums;
+}
+
+el('addBtn').onclick=()=>{
+  const fb=el('addFeedback');fb.className='feedback';
+  const parsed=parseAlbums(el('addBox').value);
+  if(parsed.length===0){fb.textContent='Couldn’t find any albums — check the format.';fb.classList.add('err');return;}
+  const existing=new Set(state.albums.map(a=>a.id));
+  let added=0,dupes=0;
+  parsed.forEach(a=>{if(existing.has(a.id)){dupes++;}else{state.albums.push(a);existing.add(a.id);added++;}});
+  persist();renderProgress();renderCrate();
+  el('addBox').value='';
+  fb.classList.add('ok');
+  fb.textContent=`Added ${added}${dupes?` · skipped ${dupes} already in crate`:''}.`;
+};
+
+/* ---------- backup ---------- */
+el('exportBtn').onclick=()=>{
+  const data={albums:state.albums,listened:[...state.listened],log:state.log,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download='on-deck-backup.json';a.click();URL.revokeObjectURL(url);
+  el('backupFeedback').className='feedback ok';el('backupFeedback').textContent='Backup downloaded.';
+};
+el('importBtn').onclick=()=>el('importFile').click();
+el('importFile').onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!Array.isArray(d.albums))throw 0;
+      state.albums=d.albums.map(a=>({...a,id:a.id||slug(a)}));
+      state.listened=new Set(d.listened||[]);
+      state.log=Array.isArray(d.log)?d.log:[...state.listened].map(id=>({id,at:null}));
+      persist();renderProgress();renderCrate();renderHistory();
+      el('backupFeedback').className='feedback ok';el('backupFeedback').textContent='Backup restored.';
+    }catch(err){el('backupFeedback').className='feedback err';el('backupFeedback').textContent='That file didn’t look like an On Deck backup.';}
+  };
+  r.readAsText(file);e.target.value='';
+};
+el('factoryReset').onclick=()=>{
+  if(confirm('Reset to the original list? This removes any albums you added and clears all listened marks.')){
+    state={albums:DEFAULT_ALBUMS.map(a=>({...a,id:slug(a)})),listened:new Set(),log:[],filter:state.filter,hideListened:false,sort:state.sort};
+    persist();renderProgress();renderCrate();renderHistory();
+    current=null;el('result').classList.remove('show');el('clearedState').style.display='none';el('idle').style.display='';
+    el('backupFeedback').className='feedback ok';el('backupFeedback').textContent='Reset to original list.';
+  }
+};
+
+/* ---------- init ---------- */
+(function init(){
+  [...el('filters').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.filter===state.filter));
+  el('sortSel').value=state.sort;
+  if(state.hideListened)el('hideListened').textContent='Show all';
+  renderProgress();
+})();
+</script>
+</body>
+</html>
